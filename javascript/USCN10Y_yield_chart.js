@@ -176,11 +176,9 @@ $("#slider").on("valuesChanging",function(e,data){
 					datelist_append.push(new Date(field.date))
 					delta_append.push((field.CN10Y-field.US10Y)*100)
 					CN10Y_append.push(field.CN10Y)
-					US10Y_append.push(field.US10Y)					
-				})
-			})
-			message_queue.push(message)
-                            $.when(message_queue[j],message).done(function(){
+					US10Y_append.push(field.US10Y)
+                                })                                    
+                            $.when(message_queue[j]).done(function(){
 
                                 console.log(j)                                
 				datelist=datelist_append.concat(datelist)
@@ -196,6 +194,8 @@ $("#slider").on("valuesChanging",function(e,data){
 				yield_chart.config.options.scales.xAxes[0].time.max=data.values.max
                                 yield_chart.update()
                             })
+			})
+			message_queue.push(message)
 		}
 		else{			
 			yield_chart.config.options.scales.xAxes[0].time.min=data.values.min
