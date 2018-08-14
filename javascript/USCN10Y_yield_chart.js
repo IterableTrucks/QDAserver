@@ -157,9 +157,10 @@ var msg=$.getJSON("/USvsCN/data.json?from="+formatDate(from)+"&to="+formatDate(t
 		yield_chart.config.data.datasets[2].data=US10Y
 		yield_chart.config.options.scales.xAxes[0].time.min=left_verge_date
  		yield_chart.update()
-		chartDate_length_monitor=datelist.length
 	})
+outer_msgqueue=[]
 message_queue.push(msg)
+outer_msgqueue.push(msg)
 var i=0
 $("#slider").on("valuesChanging",function(e,data){
 		if (data.values.min<from) {
@@ -171,31 +172,33 @@ $("#slider").on("valuesChanging",function(e,data){
                         var j=i
                         i++                                                                            
                         console.log(i,from,to_date)    
-                        var message=$.getJSON("/USvsCN/data.json?from="+formatDate(from)+"&to="+formatDate(to_date),function(result){
+                        var outer_msg=$.getJSON("/USvsCN/data.json?from="+formatDate(from)+"&to="+formatDate(to_date),function(result){
 				$.each(result.data,function(index,field){
 					datelist_append.push(new Date(field.date))
 					delta_append.push((field.CN10Y-field.US10Y)*100)
 					CN10Y_append.push(field.CN10Y)
 					US10Y_append.push(field.US10Y)
-                                })                                    
-                            $.when(message_queue[j]).done(function(){
+                                })
+                                var message=outer_msgqueue[j].done(function(){
+                                    message_queue[j].done(function(){                                
+                                        console.log(j)                                
+				        datelist=datelist_append.concat(datelist)
+    				        delta=delta_append.concat(delta)
+				        CN10Y=CN10Y_append.concat(CN10Y)
+				        US10Y=US10Y_append.concat(US10Y)
+				        yield_chart.config.data.labels=datelist
+				        yield_chart.config.data.datasets[0].data=delta
+				        yield_chart.config.data.datasets[1].data=CN10Y
+				        yield_chart.config.data.datasets[2].data=US10Y
 
-                                console.log(j)                                
-				datelist=datelist_append.concat(datelist)
-				delta=delta_append.concat(delta)
-				CN10Y=CN10Y_append.concat(CN10Y)
-				US10Y=US10Y_append.concat(US10Y)
-				yield_chart.config.data.labels=datelist
-				yield_chart.config.data.datasets[0].data=delta
-				yield_chart.config.data.datasets[1].data=CN10Y
-				yield_chart.config.data.datasets[2].data=US10Y
-
-				yield_chart.config.options.scales.xAxes[0].time.min=data.values.min
-				yield_chart.config.options.scales.xAxes[0].time.max=data.values.max
-                                yield_chart.update()
-                            })
+				        yield_chart.config.options.scales.xAxes[0].time.min=data.values.min
+				        yield_chart.config.options.scales.xAxes[0].time.max=data.values.max
+                                        yield_chart.update()
+                                    })
+                                })
+                                message_queue[j+1]=message
 			})
-			message_queue.push(message)
+                        outer_msgqueue.push(outer_msg)
 		}
 		else{			
 			yield_chart.config.options.scales.xAxes[0].time.min=data.values.min
