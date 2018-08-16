@@ -129,6 +129,8 @@ var left_verge_date=new Date()
 var chartDate_length_monitor=0
 left_verge_date.setDate(today.getDate()-100)
 var message_queue=[]
+var message=$.Deferred()
+message_queue.push(message)
 var slider=$("#slider").dateRangeSlider({
 	bounds:{
 		min:new Date("2010-07-01"),
@@ -144,7 +146,7 @@ var slider=$("#slider").dateRangeSlider({
 	},
 	valueLabels:"change",
 })
-var msg=$.getJSON("/USvsCN/data.json?from="+formatDate(from)+"&to="+formatDate(today),function(result){
+$.getJSON("/USvsCN/data.json?from="+formatDate(from)+"&to="+formatDate(today),function(result){
 		$.each(result.data,function(index,field){			
 			datelist.push(new Date(field.date))
 			delta.push((field.CN10Y-field.US10Y)*100)
@@ -157,10 +159,8 @@ var msg=$.getJSON("/USvsCN/data.json?from="+formatDate(from)+"&to="+formatDate(t
 		yield_chart.config.data.datasets[2].data=US10Y
 		yield_chart.config.options.scales.xAxes[0].time.min=left_verge_date
  		yield_chart.update()
+                message.resolve("successs")
 	})
-outer_msgqueue=[]
-message_queue.push(msg)
-outer_msgqueue.push(msg)
 var i=0
 $("#slider").on("valuesChanging",function(e,data){
 		if (data.values.min<from) {
@@ -171,16 +171,16 @@ $("#slider").on("valuesChanging",function(e,data){
 			from.setDate(data.values.min.getDate()-400)
                         var j=i
                         i++                                                                            
-                        console.log(i,from,to_date)    
-                        var outer_msg=$.getJSON("/USvsCN/data.json?from="+formatDate(from)+"&to="+formatDate(to_date),function(result){
+                        console.log(i,from,to_date)
+                        message_queue[j+1]=$.Deferred()  
+                        $.getJSON("/USvsCN/data.json?from="+formatDate(from)+"&to="+formatDate(to_date),function(result){
 				$.each(result.data,function(index,field){
 					datelist_append.push(new Date(field.date))
 					delta_append.push((field.CN10Y-field.US10Y)*100)
 					CN10Y_append.push(field.CN10Y)
 					US10Y_append.push(field.US10Y)
                                 })
-                                var message=outer_msgqueue[j].done(function(){
-                                    message_queue[j].done(function(){                                
+                                message_queue[j].done(function(callback){
                                         console.log(j)                                
 				        datelist=datelist_append.concat(datelist)
     				        delta=delta_append.concat(delta)
@@ -194,11 +194,10 @@ $("#slider").on("valuesChanging",function(e,data){
 				        yield_chart.config.options.scales.xAxes[0].time.min=data.values.min
 				        yield_chart.config.options.scales.xAxes[0].time.max=data.values.max
                                         yield_chart.update()
-                                    })
+                                        message_queue[j+1].resolve("success")
+                                        
                                 })
-                                message_queue[j+1]=message
 			})
-                        outer_msgqueue.push(outer_msg)
 		}
 		else{			
 			yield_chart.config.options.scales.xAxes[0].time.min=data.values.min
